@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Northstar Retail Co. — Inventory Sync Service</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<link rel="stylesheet" href="/css/main.css"/>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo"><i class="fa-solid fa-boxes-stacked"></i></div>
+    <div class="sidebar-brand">
+      <div class="sidebar-title">Northstar Retail</div>
+      <div class="sidebar-sub">Inventory Sync Service</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Sprint Overview</div>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)" data-tip="Dashboard">
+      <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
+    </div>
+
+    <div class="nav-group-label">Inventory</div>
+    <div class="nav-item" data-page="inventory" onclick="showPage('inventory',this)" data-tip="Inventory">
+      <i class="fa-solid fa-warehouse"></i><span>Inventory</span>
+    </div>
+    <div class="nav-item" data-page="api-tester" onclick="showPage('api-tester',this)" data-tip="API Tester">
+      <i class="fa-solid fa-terminal"></i><span>API Tester</span>
+    </div>
+
+    <div class="nav-group-label">Infrastructure</div>
+    <div class="nav-item" data-page="queue" onclick="showPage('queue',this)" data-tip="Message Queue">
+      <i class="fa-solid fa-layer-group"></i><span>Message Queue</span>
+    </div>
+    <div class="nav-item" data-page="architecture" onclick="showPage('architecture',this)" data-tip="Architecture">
+      <i class="fa-solid fa-diagram-project"></i><span>Architecture</span>
+    </div>
+    <div class="nav-item" data-page="logs" onclick="showPage('logs',this)" data-tip="System Logs">
+      <i class="fa-solid fa-scroll"></i><span>System Logs</span>
+    </div>
+
+    <div class="nav-group-label">Sprint Docs</div>
+    <div class="nav-item" data-page="journal" onclick="showPage('journal',this)" data-tip="Learning Journal">
+      <i class="fa-solid fa-book-open"></i><span>Learning Journal</span>
+    </div>
+    <div class="nav-item" data-page="pivot" onclick="showPage('pivot',this)" data-tip="Day 4 Pivot">
+      <i class="fa-solid fa-rotate"></i><span>Day 4 Pivot</span>
+      <span class="nav-badge">!</span>
+    </div>
+    <div class="nav-item" data-page="scope-delta" onclick="showPage('scope-delta',this)" data-tip="Scope Delta">
+      <i class="fa-solid fa-code-compare"></i><span>Scope Delta</span>
+    </div>
+    <div class="nav-item" data-page="regression" onclick="showPage('regression',this)" data-tip="Regression Tests">
+      <i class="fa-solid fa-list-check"></i><span>Regression Tests</span>
+    </div>
+    <div class="nav-item" data-page="adaptability" onclick="showPage('adaptability',this)" data-tip="Adaptability Index">
+      <i class="fa-solid fa-star-half-stroke"></i><span>Adaptability Index</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <i class="fa-solid fa-code-branch" style="color:var(--text-3);flex-shrink:0;font-size:12px"></i>
+    <span class="sidebar-footer-text">5-Day Assessed Sprint</span>
+  </div>
+</aside>
+
+<!-- HEADER -->
+<header class="header" id="mainHeader">
+  <div class="header-left">
+    <button class="toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div>
+      <div class="header-page-title" id="headerTitle">Dashboard</div>
+      <div class="header-page-sub" id="headerSub">Sprint overview and system status</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="phase-banner" id="phaseBanner">
+      <i class="fa-solid fa-circle-dot"></i>
+      <span id="phaseLabel">DAY 3 — ORIGINAL SPEC</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="switchPhase()">
+      <i class="fa-solid fa-right-left"></i> Switch Phase
+    </button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main" id="mainContent">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="page active" id="page-dashboard">
+    <div class="section-label"><i class="fa-solid fa-gauge-high"></i> System Status</div>
+    <div class="status-bar" id="systemStatusBar">
+      <div class="status-bar-item">
+        <i class="fa-solid fa-circle status-dot" id="sdInventory"></i>
+        <span>Inventory Cache</span>
+      </div>
+      <div class="status-bar-item">
+        <i class="fa-solid fa-circle status-dot" id="sdPoller"></i>
+        <span id="sdPollerLabel">Poller Active</span>
+      </div>
+      <div class="status-bar-item">
+        <i class="fa-solid fa-circle status-dot" id="sdQueue"></i>
+        <span>Queue Worker</span>
+      </div>
+      <div class="status-bar-item">
+        <i class="fa-solid fa-circle status-dot" id="sdWebhook"></i>
+        <span id="sdWebhookLabel">Webhooks</span>
+      </div>
+      <div class="status-bar-sep"></div>
+      <div class="status-bar-item">
+        <i class="fa-regular fa-clock" style="color:var(--text-3)"></i>
+        <span>Last sync: <strong id="lastSyncDisplay">—</strong></span>
+      </div>
+    </div>
+
+    <div class="grid-4 gap">
+      <div class="stat-card c-accent">
+        <div class="stat-label"><i class="fa-solid fa-boxes-stacked"></i> Inventory Items</div>
+        <div class="stat-value" id="d_inventoryCount">0</div>
+        <div class="stat-sub">products tracked</div>
+      </div>
+      <div class="stat-card c-green">
+        <div class="stat-label"><i class="fa-solid fa-circle-check"></i> Queue Processed</div>
+        <div class="stat-value" id="d_processed">0</div>
+        <div class="stat-sub">messages handled</div>
+      </div>
+      <div class="stat-card c-amber">
+        <div class="stat-label"><i class="fa-solid fa-layer-group"></i> Queue Depth</div>
+        <div class="stat-value" id="d_queueDepth">0</div>
+        <div class="stat-sub">messages pending</div>
+      </div>
+      <div class="stat-card c-red">
+        <div class="stat-label"><i class="fa-solid fa-triangle-exclamation"></i> Failed</div>
+        <div class="stat-value" id="d_failed">0</div>
+        <div class="stat-sub">dead-letter queue</div>
+      </div>
+    </div>
+
+    <div class="gap grid-2">
+      <!-- Architecture diagram (mini) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-diagram-project"></i> Current Architecture</div>
+          <span class="badge badge-phase" id="archBadge">Day 3</span>
+        </div>
+        <div class="arch-mini" id="archMini"></div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-bolt"></i> Quick Actions</div>
+        </div>
+        <div class="quick-actions" id="quickActions"></div>
+      </div>
+    </div>
+
+    <div class="gap">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-boxes-stacked"></i> Inventory Overview</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Product ID</th><th>Name</th><th>Stock</th><th>Status</th><th>Last Synced</th><th>Source</th>
+            </tr></thead>
+            <tbody id="d_inventoryTable"><tr><td colspan="6" class="td-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INVENTORY ── -->
+  <div class="page" id="page-inventory">
+    <div class="section-label"><i class="fa-solid fa-warehouse"></i> Inventory Cache</div>
+
+    <div class="gap grid-2">
+      <!-- Polling controls (Day 3) -->
+      <div class="card" id="pollingCard">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Polling Service
+            <span class="badge badge-deprecated" id="pollingDeprecatedBadge" style="display:none">DEPRECATED</span>
+          </div>
+          <div class="status-pill" id="pollerStatusPill">Stopped</div>
+        </div>
+        <p class="card-desc">Original Day 3 architecture: poll the warehouse API every 5 minutes.</p>
+        <div class="btn-group gap-sm">
+          <button class="btn btn-green btn-sm" id="btnStartPoller" onclick="startPoller()">
+            <i class="fa-solid fa-play"></i> Start (Demo Mode)
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="stopPoller()">
+            <i class="fa-solid fa-stop"></i> Stop
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="pollOnce()">
+            <i class="fa-solid fa-rotate"></i> Poll Once
+          </button>
+          <button class="btn btn-amber btn-sm" onclick="simulatePollFail()">
+            <i class="fa-solid fa-bug"></i> Fail Next
+          </button>
+        </div>
+        <div class="info-box gap-sm" id="pollingInfo">
+          Demo mode: polls every 30 seconds instead of 5 minutes.
+        </div>
+      </div>
+
+      <!-- Webhook controls (Day 4/5) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-webhook"></i> Webhook Receiver
+            <span class="badge badge-new" id="webhookNewBadge">Day 4+</span>
+          </div>
+          <div class="status-pill active" id="webhookStatusPill">Listening</div>
+        </div>
+        <p class="card-desc">Day 4/5 architecture: warehouse pushes events via webhook.</p>
+        <div class="code-block">POST /webhooks/inventory</div>
+        <div class="btn-group gap-sm">
+          <button class="btn btn-primary btn-sm" onclick="showPage('pivot',null)">
+            <i class="fa-solid fa-rotate"></i> View Pivot Details
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warehouse simulator -->
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-industry"></i> Warehouse Simulator</div>
+        <span class="badge badge-sim">Simulated</span>
+      </div>
+      <p class="card-desc">Simulate the warehouse sending stock updates. In production, the warehouse system triggers these automatically.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product ID</label>
+          <select id="wh_productId">
+            <option value="SKU-001">SKU-001 — Wireless Headphones</option>
+            <option value="SKU-002">SKU-002 — USB-C Cable</option>
+            <option value="SKU-003">SKU-003 — Power Bank</option>
+            <option value="SKU-004">SKU-004 — Laptop Stand</option>
+            <option value="SKU-005">SKU-005 — Keyboard</option>
+            <option value="SKU-006">SKU-006 — Ergonomic Mouse</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>New Stock Level</label>
+          <input type="number" id="wh_stock" value="10" min="0" max="999"/>
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label>&nbsp;</label>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="sendWebhook()">
+              <i class="fa-solid fa-paper-plane"></i> Send Webhook Event
+            </button>
+            <button class="btn btn-secondary" onclick="sendPollUpdate()">
+              <i class="fa-solid fa-rotate"></i> Update via Poll
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="wh_result" class="result-box" style="display:none"></div>
+    </div>
+
+    <!-- Inventory table -->
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-table"></i> Live Inventory Cache</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadInventory()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Product ID</th><th>Name</th><th>Stock</th><th>In Stock</th><th>Last Synced</th><th>Source</th>
+          </tr></thead>
+          <tbody id="inventoryTable"><tr><td colspan="6" class="td-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── API TESTER ── -->
+  <div class="page" id="page-api-tester">
+    <div class="section-label"><i class="fa-solid fa-terminal"></i> Query API — Support Tool Interface</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-magnifying-glass"></i> GET /api/inventory/:productId</div>
+        </div>
+        <p class="card-desc">This is the endpoint the Support Tool calls to answer: "Is this product in stock?"</p>
+        <div class="form-group">
+          <label>Product ID</label>
+          <div class="input-row">
+            <input type="text" id="api_productId" value="SKU-001" placeholder="SKU-001"/>
+            <button class="btn btn-primary" onclick="queryInventory()">
+              <i class="fa-solid fa-paper-plane"></i> Query
+            </button>
+          </div>
+        </div>
+        <div class="shortcut-pills">
+          <span onclick="setAndQuery('SKU-001')">SKU-001</span>
+          <span onclick="setAndQuery('SKU-002')">SKU-002</span>
+          <span onclick="setAndQuery('SKU-003')">SKU-003</span>
+          <span onclick="setAndQuery('SKU-999')">SKU-999 (404)</span>
+        </div>
+        <div id="api_result" class="result-box gap-sm" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-paper-plane"></i> POST /webhooks/inventory</div>
+        </div>
+        <p class="card-desc">Send a raw webhook payload — useful for testing validation and duplicate detection.</p>
+        <div class="form-group">
+          <label>Event Payload (JSON)</label>
+          <textarea id="webhook_payload" rows="7">{
+  "eventId": "evt-test-001",
+  "productId": "SKU-001",
+  "stock": 42,
+  "timestamp": "2026-08-19T10:00:00Z"
+}</textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="sendRawWebhook()">
+            <i class="fa-solid fa-paper-plane"></i> Send Webhook
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="genEventId()">
+            <i class="fa-solid fa-dice"></i> New Event ID
+          </button>
+          <button class="btn btn-amber btn-sm" onclick="sendBadWebhook()">
+            <i class="fa-solid fa-bug"></i> Invalid Payload
+          </button>
+        </div>
+        <div id="webhook_result" class="result-box gap-sm" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MESSAGE QUEUE ── -->
+  <div class="page" id="page-queue">
+    <div class="section-label"><i class="fa-solid fa-layer-group"></i> Message Queue Dashboard</div>
+    <div class="info-box gap-sm">
+      <i class="fa-solid fa-circle-info"></i>
+      <strong>Implementation note:</strong> This is an in-memory queue abstraction. The interface (<code>publish</code>, <code>consume</code>, <code>retry</code>, <code>deadLetter</code>) is designed to be swapped for RabbitMQ, Redis Streams, or AWS SQS without changing consumer code.
+    </div>
+
+    <div class="grid-4 gap">
+      <div class="stat-card c-accent">
+        <div class="stat-label"><i class="fa-solid fa-arrow-right-to-bracket"></i> Enqueued</div>
+        <div class="stat-value" id="q_enqueued">0</div>
+      </div>
+      <div class="stat-card c-green">
+        <div class="stat-label"><i class="fa-solid fa-circle-check"></i> Processed</div>
+        <div class="stat-value" id="q_processed">0</div>
+      </div>
+      <div class="stat-card c-amber">
+        <div class="stat-label"><i class="fa-solid fa-rotate-left"></i> Retried</div>
+        <div class="stat-value" id="q_retried">0</div>
+      </div>
+      <div class="stat-card c-red">
+        <div class="stat-label"><i class="fa-solid fa-skull-crossbones"></i> Dead Letter</div>
+        <div class="stat-value" id="q_dlq">0</div>
+      </div>
+    </div>
+
+    <div class="gap grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-layer-group"></i> Queue Contents (FIFO)</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadQueueStats()"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+        <div id="queueContents" class="queue-viz"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-skull-crossbones"></i> Dead-Letter Queue</div>
+          <button class="btn btn-red btn-sm" onclick="clearDLQ()"><i class="fa-solid fa-trash"></i> Clear DLQ</button>
+        </div>
+        <div id="dlqContents"></div>
+      </div>
+    </div>
+
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-code"></i> Queue API Reference</div>
+      </div>
+      <div class="code-ref">
+        <div class="code-ref-item"><span class="code-method">publish</span><span class="code-sig">(message)</span><span class="code-desc">→ Add to BACK of queue</span></div>
+        <div class="code-ref-item"><span class="code-method">consume</span><span class="code-sig">(handler)</span><span class="code-desc">→ Register a worker function</span></div>
+        <div class="code-ref-item"><span class="code-method">retry</span><span class="code-sig">(message)</span><span class="code-desc">→ Re-queue with incremented counter</span></div>
+        <div class="code-ref-item"><span class="code-method">deadLetter</span><span class="code-sig">(message, err)</span><span class="code-desc">→ Move to DLQ after max retries</span></div>
+        <div class="code-ref-item"><span class="code-method">getStats</span><span class="code-sig">()</span><span class="code-desc">→ Queue metrics</span></div>
+        <div class="code-ref-item"><span class="code-method">getDeadLetters</span><span class="code-sig">()</span><span class="code-desc">→ DLQ contents</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ARCHITECTURE ── -->
+  <div class="page" id="page-architecture">
+    <div class="section-label"><i class="fa-solid fa-diagram-project"></i> Architecture Diagrams</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Day 3 — Original (Polling)</div>
+          <span class="badge badge-deprecated">Deprecated</span>
+        </div>
+        <div class="arch-diagram" id="archDay3"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-bolt"></i> Day 5 — Final (Webhook)</div>
+          <span class="badge badge-new">Current</span>
+        </div>
+        <div class="arch-diagram" id="archDay5"></div>
+      </div>
+    </div>
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-right-left"></i> What Changed</div>
+      </div>
+      <div class="change-table">
+        <div class="change-row change-header">
+          <div>Component</div><div>Day 3</div><div>Day 5</div><div>Impact</div>
+        </div>
+        <div class="change-row change-removed"><div>Poller</div><div>Poll every 5 min</div><div><s>Removed</s></div><div>Major</div></div>
+        <div class="change-row change-changed"><div>Data flow</div><div>Scheduled pull</div><div>Webhook push</div><div>Architecture</div></div>
+        <div class="change-row change-promoted"><div>Message Queue</div><div>Learning prototype</div><div>Core processing path</div><div>Promoted</div></div>
+        <div class="change-row change-kept"><div>Inventory Cache</div><div>JSON store</div><div>JSON store</div><div>Unchanged</div></div>
+        <div class="change-row change-kept"><div>Query API</div><div>/api/inventory/:id</div><div>/api/inventory/:id</div><div>Unchanged</div></div>
+        <div class="change-row change-changed"><div>Webhook Receiver</div><div>Not present</div><div>POST /webhooks/inventory</div><div>New</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOGS ── -->
+  <div class="page" id="page-logs">
+    <div class="section-label"><i class="fa-solid fa-scroll"></i> System Activity Log</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-terminal"></i> Event Stream</div>
+        <div class="btn-group">
+          <select id="logTypeFilter" onchange="loadLogs()" class="filter-select">
+            <option value="">All Events</option>
+            <option value="POLL_START">Poll Events</option>
+            <option value="WEBHOOK_ACCEPTED">Webhook Events</option>
+            <option value="QUEUE_ENQUEUE">Queue Events</option>
+            <option value="INVENTORY_UPDATED">Inventory Updates</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadLogs()"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+      </div>
+      <div id="logStream" class="log-stream"></div>
+    </div>
+  </div>
+
+  <!-- ── LEARNING JOURNAL ── -->
+  <div class="page" id="page-journal">
+    <div class="section-label"><i class="fa-solid fa-book-open"></i> Learning & Blocker Journal</div>
+    <div class="info-box">
+      <i class="fa-solid fa-circle-info"></i>
+      Record your <strong>real</strong> learning experiences, blockers, and discoveries here. Do not fabricate entries.
+    </div>
+    <div class="gap">
+      <button class="btn btn-primary" onclick="newJournalEntry()">
+        <i class="fa-solid fa-plus"></i> New Journal Entry
+      </button>
+    </div>
+    <div class="gap" id="journalList"></div>
+
+    <!-- Entry Editor (hidden by default) -->
+    <div id="journalEditor" class="modal-overlay" style="display:none">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <div class="modal-title" id="journalEditorTitle">New Journal Entry</div>
+          <button class="btn btn-ghost btn-sm" onclick="closeJournalEditor()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <input type="hidden" id="je_id"/>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date / Time</label>
+            <input type="datetime-local" id="je_datetime"/>
+          </div>
+          <div class="form-group">
+            <label>Current Status</label>
+            <select id="je_status">
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="blocked">Blocked</option>
+              <option value="learning">Learning</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Time Planned (hrs)</label>
+            <input type="number" id="je_timePlanned" step="0.5" min="0" placeholder="2.0"/>
+          </div>
+          <div class="form-group">
+            <label>Actual Time Spent (hrs)</label>
+            <input type="number" id="je_timeActual" step="0.5" min="0" placeholder="3.5"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>What I Attempted</label>
+          <textarea id="je_attempted" rows="2" placeholder="What task or concept were you working on?"></textarea>
+        </div>
+        <div class="form-group">
+          <label>What I Was Trying to Understand</label>
+          <textarea id="je_trying" rows="2" placeholder="What was the learning goal?"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Error / Blocker</label>
+          <textarea id="je_error" rows="2" placeholder="Exact error message or description of blocker"></textarea>
+        </div>
+        <div class="form-group">
+          <label>What I Tried</label>
+          <textarea id="je_tried" rows="2" placeholder="Steps attempted to resolve it"></textarea>
+        </div>
+        <div class="form-group">
+          <label>What Failed</label>
+          <textarea id="je_failed" rows="2" placeholder="What approaches didn't work and why"></textarea>
+        </div>
+        <div class="form-group">
+          <label>What I Learned</label>
+          <textarea id="je_learned" rows="2" placeholder="Key insight or takeaway"></textarea>
+        </div>
+        <div class="form-group">
+          <label>How I Fixed It</label>
+          <textarea id="je_fixed" rows="2" placeholder="Final resolution (or leave blank if still blocked)"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeJournalEditor()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveJournalEntry()"><i class="fa-solid fa-floppy-disk"></i> Save Entry</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DAY 4 PIVOT ── -->
+  <div class="page" id="page-pivot">
+    <div class="section-label"><i class="fa-solid fa-rotate"></i> Day 4 — Mandatory Pivot</div>
+    <div class="pivot-announcement">
+      <div class="pivot-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div>
+        <div class="pivot-title">Client Announcement — Day 4</div>
+        <div class="pivot-msg">"The polling method is being killed in 48 hours." — Northstar Product Team</div>
+        <div class="pivot-sub">This is non-negotiable. The architecture must change.</div>
+      </div>
+    </div>
+
+    <div class="gap grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-trash-can"></i> OLD Architecture (Killed)</div>
+          <span class="badge badge-deprecated">Removed</span>
+        </div>
+        <div class="arch-diagram small" id="pivotOldArch"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-bolt"></i> NEW Architecture (Webhook)</div>
+          <span class="badge badge-new">Active</span>
+        </div>
+        <div class="arch-diagram small" id="pivotNewArch"></div>
+      </div>
+    </div>
+
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-webhook"></i> Webhook Specification</div>
+      </div>
+      <div class="spec-section">
+        <div class="spec-label">Endpoint</div>
+        <div class="code-block">POST /webhooks/inventory</div>
+      </div>
+      <div class="spec-section">
+        <div class="spec-label">Example Payload</div>
+        <pre class="code-block">{
+  "eventId":   "evt-001",
+  "productId": "SKU-001",
+  "stock":     18,
+  "timestamp": "2026-08-19T10:00:00Z"
+}</pre>
+      </div>
+      <div class="spec-section">
+        <div class="spec-label">Processing Pipeline</div>
+        <div class="pipeline-steps">
+          <div class="pipeline-step"><i class="fa-solid fa-circle-check"></i> Accept event</div>
+          <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          <div class="pipeline-step"><i class="fa-solid fa-shield-halved"></i> Validate payload</div>
+          <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          <div class="pipeline-step"><i class="fa-solid fa-copy"></i> Check duplicate (eventId)</div>
+          <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          <div class="pipeline-step"><i class="fa-solid fa-layer-group"></i> Enqueue message</div>
+          <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          <div class="pipeline-step"><i class="fa-solid fa-gears"></i> Worker processes</div>
+          <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+          <div class="pipeline-step"><i class="fa-solid fa-database"></i> Update cache</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-toggle-on"></i> Phase Control</div>
+      </div>
+      <p class="card-desc">Switch between Day 3 (polling) and Day 5 (webhook) to demonstrate the architectural change. In Day 5 mode, the poller is permanently disabled.</p>
+      <div class="phase-toggle-row">
+        <div class="phase-toggle-option" id="ptDay3" onclick="setPhase('day3')">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <div><strong>Day 3</strong><br><small>Polling active</small></div>
+        </div>
+        <div class="phase-toggle-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+        <div class="phase-toggle-option" id="ptDay5" onclick="setPhase('day5')">
+          <i class="fa-solid fa-bolt"></i>
+          <div><strong>Day 5</strong><br><small>Webhook mode</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCOPE DELTA ── -->
+  <div class="page" id="page-scope-delta">
+    <div class="section-label"><i class="fa-solid fa-code-compare"></i> Scope Delta Analysis</div>
+    <div class="info-box">
+      <i class="fa-solid fa-pen-to-square"></i>
+      This document is <strong>editable</strong>. Fill in the details from your actual sprint experience.
+    </div>
+
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-table"></i> Change Impact Table</div>
+      </div>
+      <div class="change-table">
+        <div class="change-row change-header">
+          <div>Category</div><div>Original</div><div>After Pivot</div><div>Impact</div>
+        </div>
+        <div id="scopeTable"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm gap-sm" onclick="addScopeRow()">
+        <i class="fa-solid fa-plus"></i> Add Row
+      </button>
+    </div>
+
+    <div class="gap grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-file-lines"></i> Original Scope</div></div>
+        <textarea class="scope-textarea" id="sd_originalScope" placeholder="Describe the original project scope…" rows="5"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-file-circle-plus"></i> New Scope</div></div>
+        <textarea class="scope-textarea" id="sd_newScope" placeholder="Describe the scope after the pivot…" rows="5"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-minus"></i> Dropped Items</div></div>
+        <textarea class="scope-textarea" id="sd_droppedItems" placeholder="What was cut or removed?" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-plus"></i> Added Items</div></div>
+        <textarea class="scope-textarea" id="sd_addedItems" placeholder="What was added as a result of the pivot?" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-triangle-exclamation"></i> Technical Impact</div></div>
+        <textarea class="scope-textarea" id="sd_technicalImpact" placeholder="Technical consequences of the change…" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-diagram-project"></i> Architectural Impact</div></div>
+        <textarea class="scope-textarea" id="sd_architecturalImpact" placeholder="How did the system design change?" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-clock"></i> Time / Deadline Impact</div></div>
+        <textarea class="scope-textarea" id="sd_timeImpact" placeholder="Did the pivot affect timelines?" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Trade-offs</div></div>
+        <textarea class="scope-textarea" id="sd_tradeoffs" placeholder="What did you gain and lose in the pivot?" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-trash-can"></i> Deprecated / Removed</div></div>
+        <textarea class="scope-textarea" id="sd_deprecatedItems" placeholder="What was intentionally deprecated?" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-notes-medical"></i> Regression Notes</div></div>
+        <textarea class="scope-textarea" id="sd_regressionNotes" placeholder="Notes from regression testing…" rows="4"></textarea>
+      </div>
+    </div>
+
+    <div class="gap" style="text-align:right">
+      <button class="btn btn-primary" onclick="saveScopeDelta()">
+        <i class="fa-solid fa-floppy-disk"></i> Save Scope Delta
+      </button>
+    </div>
+  </div>
+
+  <!-- ── REGRESSION ── -->
+  <div class="page" id="page-regression">
+    <div class="section-label"><i class="fa-solid fa-list-check"></i> Regression Test Checklist</div>
+    <div class="info-box">
+      <i class="fa-solid fa-circle-info"></i>
+      Check each item manually after completing the Day 5 refactor. Use the API Tester to verify each scenario.
+    </div>
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-clipboard-check"></i> Post-Pivot Regression Checks</div>
+        <div class="btn-group">
+          <button class="btn btn-ghost btn-sm" onclick="checkAll()"><i class="fa-solid fa-check-double"></i> Check All</button>
+          <button class="btn btn-ghost btn-sm" onclick="uncheckAll()"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+      </div>
+      <div id="checklistItems"></div>
+      <div class="gap-sm" style="text-align:right">
+        <div class="checklist-progress" id="checklistProgress"></div>
+        <button class="btn btn-primary gap-sm" onclick="saveChecklist()">
+          <i class="fa-solid fa-floppy-disk"></i> Save Progress
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ADAPTABILITY ── -->
+  <div class="page" id="page-adaptability">
+    <div class="section-label"><i class="fa-solid fa-star-half-stroke"></i> Adaptability Index — Assignment 3</div>
+    <div class="info-box confidential-box">
+      <i class="fa-solid fa-lock"></i>
+      <strong>Confidential.</strong> This form is for your personal submission only. Do not display individual responses publicly. Scores reflect your own self-assessment — do not fabricate peer responses.
+    </div>
+
+    <div class="gap card">
+      <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-user-check"></i> Self-Assessment (1–5 Scale)</div>
+      </div>
+      <div id="adaptabilityFields"></div>
+      <div class="form-group gap-sm">
+        <label>General Notes / Additional Context</label>
+        <textarea id="adapt_generalNotes" rows="4" placeholder="Any additional context about your sprint experience…"></textarea>
+      </div>
+      <div style="text-align:right">
+        <button class="btn btn-primary" onclick="saveAdaptability()">
+          <i class="fa-solid fa-floppy-disk"></i> Save Assessment
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -323,7 +323,7 @@ tbody tr:last-child td { border-bottom: none; }
   background: var(--surface-2); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 10px 12px;
   font-family: var(--mono); font-size: 12px; color: var(--text-2);
-  white-space: pre; overflow-x: auto;
+  white-space: pre-wrap; overflow-x: auto; word-break: break-word;
 }
 .code-ref { display: flex; flex-direction: column; gap: 0; }
 .code-ref-item {
@@ -594,4 +594,9 @@ tbody tr:last-child td { border-bottom: none; }
   .phase-toggle-row { flex-direction: column; }
   .grid-4 { grid-template-columns: 1fr; }
   .change-row { grid-template-columns: 1fr 1fr; }
+  .info-box { font-size: 11px; flex-direction: column; }
+  .code-ref-item { flex-direction: column; gap: 3px; }
+  .code-method, .code-sig { min-width: unset; }
+  * { max-width: 100%; }
+}
 }
